@@ -23,10 +23,13 @@ use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use SimpleSAML\Logger;
+use League\OAuth2\Server\CryptTrait;
 
 class AuthorizationServer implements EmitterAwareInterface
 {
     use EmitterAwareTrait;
+    use CryptTrait;
 
     /**
      * @var GrantTypeInterface[]
@@ -69,11 +72,6 @@ class AuthorizationServer implements EmitterAwareInterface
     private $scopeRepository;
 
     /**
-     * @var string|Key
-     */
-    private $encryptionKey;
-
-    /**
      * @var string
      */
     private $defaultScope = '';
@@ -104,7 +102,9 @@ class AuthorizationServer implements EmitterAwareInterface
             $privateKey = new CryptKey($privateKey);
         }
         $this->privateKey = $privateKey;
-        $this->encryptionKey = $encryptionKey;
+	$this->setEncryptionKey($encryptionKey);
+
+
         $this->responseType = $responseType;
     }
 
@@ -168,6 +168,22 @@ class AuthorizationServer implements EmitterAwareInterface
     }
 
     /**
+     * Retrieve request parameter.
+     *
+     * @param string                 $parameter
+     * @param ServerRequestInterface $request
+     * @param mixed                  $default
+     *
+     * @return null|string
+     */
+    protected function getRequestParameter($parameter, ServerRequestInterface $request, $default = null)
+    {   
+        $requestParameters = (array) $request->getParsedBody();
+
+        return isset($requestParameters[$parameter]) ? $requestParameters[$parameter] : $default;
+    }
+
+    /**
      * Return an access token response.
      *
      * @param ServerRequestInterface $request
@@ -183,6 +199,24 @@ class AuthorizationServer implements EmitterAwareInterface
             if (!$grantType->canRespondToAccessTokenRequest($request)) {
                 continue;
             }
+
+	    $responseType = $this->getResponseType();
+	    Logger::info("*** AuthorizationServer.php: class: " . get_class($responseType));
+
+	    Logger::info("*** AuthorizationServer.php: ServerRequestInterface: " . var_export($request->getParsedBody(), true));
+
+	    $encryptedAuthCode = $this->getRequestParameter('code', $request, null);
+	    Logger::info('*** AuthorizationServer.php: encryptedAuthCode' . var_export($encryptedAuthCode, true));
+
+	    $authCodePayload = json_decode($this->decrypt($encryptedAuthCode));
+	    Logger::info('*** AuthorizationServer.php: authCodePayload' . var_export($authCodePayload, true));
+            
+	    if ($responseType instanceof IdTokenResponse) {
+	    	$responseType->setNonce($authCodePayload->nonce);
+	    };
+	    
+	    Logger::info("*** AuthorizationServer.php: query params: " . var_export($request->getQueryParams(), true));
+
             $tokenResponse = $grantType->respondToAccessTokenRequest(
                 $request,
                 $this->getResponseType(),

@@ -20,6 +20,7 @@ use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
 use League\OAuth2\Server\ResponseTypes\RedirectResponse;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use SimpleSAML\Logger;
 
 class AuthCodeGrant extends AbstractAuthorizeGrant
 {
@@ -73,7 +74,7 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
         // Validate request
         $client = $this->validateClient($request);
         $encryptedAuthCode = $this->getRequestParameter('code', $request, null);
-
+        Logger::info('encryptedAuthCode'          . var_export($encryptedAuthCode, true));
         if ($encryptedAuthCode === null) {
             throw OAuthServerException::invalidRequest('code');
         }
@@ -176,6 +177,7 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
         $accessToken = $this->issueAccessToken($accessTokenTTL, $client, $authCodePayload->user_id, $scopes);
         $refreshToken = $this->issueRefreshToken($accessToken);
 
+        Logger::info('authCodePlayload: '          . var_export($authCodePayload, true));
         // Send events to emitter
         $this->getEmitter()->emit(new RequestEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request));
         $this->getEmitter()->emit(new RequestEvent(RequestEvent::REFRESH_TOKEN_ISSUED, $request));
@@ -258,12 +260,14 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
             $redirectUri
         );
 
+        $nonce = $this->getQueryStringParameter('nonce', $request);
         $stateParameter = $this->getQueryStringParameter('state', $request);
 
         $authorizationRequest = new AuthorizationRequest();
         $authorizationRequest->setGrantTypeId($this->getIdentifier());
         $authorizationRequest->setClient($client);
         $authorizationRequest->setRedirectUri($redirectUri);
+        $authorizationRequest->setNonce($nonce);
 
         if ($stateParameter !== null) {
             $authorizationRequest->setState($stateParameter);
@@ -324,7 +328,8 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
                 $authorizationRequest->getClient(),
                 $authorizationRequest->getUser()->getIdentifier(),
                 $authorizationRequest->getRedirectUri(),
-                $authorizationRequest->getScopes()
+                $authorizationRequest->getScopes(),
+                $authorizationRequest->getNonce()
             );
 
             $payload = [
@@ -336,6 +341,7 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
                 'expire_time'           => (new \DateTime())->add($this->authCodeTTL)->format('U'),
                 'code_challenge'        => $authorizationRequest->getCodeChallenge(),
                 'code_challenge_method' => $authorizationRequest->getCodeChallengeMethod(),
+                'nonce'                 => $authorizationRequest->getNonce(),
             ];
 
             $response = new RedirectResponse();
@@ -353,6 +359,7 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
                 )
             );
 
+        Logger::info('authode: '          . var_export($response, true));
             return $response;
         }
 

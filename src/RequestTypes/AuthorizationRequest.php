@@ -58,6 +58,13 @@ class AuthorizationRequest
     protected $redirectUri;
 
     /**
+     * 
+     *
+     * @var string|null
+     */
+    protected $nonce;
+
+    /**
      * The state parameter on the authorization request
      *
      * @var string|null
@@ -177,6 +184,20 @@ class AuthorizationRequest
     /**
      * @return string|null
      */
+
+    public function getNonce()
+    {
+        return $this->nonce;
+    }
+
+    /**
+     * @param string|null $nonce
+     */
+    public function setNonce($nonce)
+    {
+        $this->nonce = $nonce;
+    }
+
     public function getState()
     {
         return $this->state;

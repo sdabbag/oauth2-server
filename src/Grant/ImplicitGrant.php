@@ -148,6 +148,7 @@ class ImplicitGrant extends AbstractAuthorizeGrant
                 ? $client->getRedirectUri()[0]
                 : $client->getRedirectUri();
         }
+        $nonce = $this->getQueryStringParameter('nonce', $request);
 
         $scopes = $this->validateScopes(
             $this->getQueryStringParameter('scope', $request, $this->defaultScope),
@@ -167,6 +168,7 @@ class ImplicitGrant extends AbstractAuthorizeGrant
         $authorizationRequest->setGrantTypeId($this->getIdentifier());
         $authorizationRequest->setClient($client);
         $authorizationRequest->setRedirectUri($redirectUri);
+        $authorizationRequest->setNonce($nonce);
 
         if ($stateParameter !== null) {
             $authorizationRequest->setState($stateParameter);
@@ -210,6 +212,7 @@ class ImplicitGrant extends AbstractAuthorizeGrant
                         'token_type'   => 'Bearer',
                         'expires_in'   => $accessToken->getExpiryDateTime()->getTimestamp() - (new \DateTime())->getTimestamp(),
                         'state'        => $authorizationRequest->getState(),
+                        'nonce'        => $authorizationRequest->getNonce(),
                     ],
                     $this->queryDelimiter
                 )
