@@ -211,9 +211,7 @@ class AuthorizationServer implements EmitterAwareInterface
 	    $authCodePayload = json_decode($this->decrypt($encryptedAuthCode));
 	    Logger::info('*** AuthorizationServer.php: authCodePayload' . var_export($authCodePayload, true));
             
-	    if ($responseType instanceof IdTokenResponse) {
-	    	$responseType->setNonce($authCodePayload->nonce);
-	    };
+	    $responseType->setNonce($authCodePayload->nonce);
 	    
 	    Logger::info("*** AuthorizationServer.php: query params: " . var_export($request->getQueryParams(), true));
 
