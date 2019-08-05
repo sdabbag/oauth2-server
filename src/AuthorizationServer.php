@@ -201,20 +201,9 @@ class AuthorizationServer implements EmitterAwareInterface
             }
 
 	    $responseType = $this->getResponseType();
-	    Logger::info("*** AuthorizationServer.php: class: " . get_class($responseType));
-
-	    Logger::info("*** AuthorizationServer.php: ServerRequestInterface: " . var_export($request->getParsedBody(), true));
-
 	    $encryptedAuthCode = $this->getRequestParameter('code', $request, null);
-	    Logger::info('*** AuthorizationServer.php: encryptedAuthCode' . var_export($encryptedAuthCode, true));
-
 	    $authCodePayload = json_decode($this->decrypt($encryptedAuthCode));
-	    Logger::info('*** AuthorizationServer.php: authCodePayload' . var_export($authCodePayload, true));
-            
-	    $responseType->setNonce($authCodePayload->nonce);
-	    
-	    Logger::info("*** AuthorizationServer.php: query params: " . var_export($request->getQueryParams(), true));
-
+	    $responseType->setNonce($authCodePayload->nonce); 
             $tokenResponse = $grantType->respondToAccessTokenRequest(
                 $request,
                 $this->getResponseType(),

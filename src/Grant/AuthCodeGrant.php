@@ -74,7 +74,6 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
         // Validate request
         $client = $this->validateClient($request);
         $encryptedAuthCode = $this->getRequestParameter('code', $request, null);
-        Logger::info('encryptedAuthCode'          . var_export($encryptedAuthCode, true));
         if ($encryptedAuthCode === null) {
             throw OAuthServerException::invalidRequest('code');
         }
@@ -177,7 +176,6 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
         $accessToken = $this->issueAccessToken($accessTokenTTL, $client, $authCodePayload->user_id, $scopes);
         $refreshToken = $this->issueRefreshToken($accessToken);
 
-        Logger::info('authCodePlayload: '          . var_export($authCodePayload, true));
         // Send events to emitter
         $this->getEmitter()->emit(new RequestEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request));
         $this->getEmitter()->emit(new RequestEvent(RequestEvent::REFRESH_TOKEN_ISSUED, $request));
@@ -359,7 +357,6 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
                 )
             );
 
-        Logger::info('authode: '          . var_export($response, true));
             return $response;
         }
 
