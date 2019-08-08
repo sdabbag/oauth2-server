@@ -24,6 +24,7 @@ use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use SimpleSAML\Logger;
 
 class AuthorizationServer implements EmitterAwareInterface
 {
@@ -53,6 +54,11 @@ class AuthorizationServer implements EmitterAwareInterface
      * @var ResponseTypeInterface
      */
     protected $responseType;
+
+    /**
+     * @var nonce
+     */
+    protected $nonce;
 
     /**
      * @var ClientRepositoryInterface
@@ -152,6 +158,14 @@ class AuthorizationServer implements EmitterAwareInterface
      */
     public function validateAuthorizationRequest(ServerRequestInterface $request)
     {
+        Logger::info("*** AuthorizationServer.php:validateAuthorizationRequest:ServerRequest" . var_export($request, true));
+	$this->nonce = $request->getQueryParams()['nonce'];
+        Logger::info("*** AuthorizationServer.php:validateAuthorizationRequest:ServerRequest:nonce" . var_export($this->nonce, true));
+        $responseType = $this->getResponseType();
+       // Logger::info("*** AuthorizationServer.php:respondToAccessTokenReques:responseType" . var_export($response, true));
+        $responseType->setNonce($this->nonce);
+
+
         foreach ($this->enabledGrantTypes as $grantType) {
             if ($grantType->canRespondToAuthorizationRequest($request)) {
                 return $grantType->validateAuthorizationRequest($request);
@@ -171,10 +185,15 @@ class AuthorizationServer implements EmitterAwareInterface
      */
     public function completeAuthorizationRequest(AuthorizationRequest $authRequest, ResponseInterface $response)
     {
+        Logger::info("*** AuthorizationServer.php:completeAuthorizationRequest:authRequest" . var_export($authRequest, true));
+//        $this->nonce = $authRequest->getQueryParams()['nonce'];
+//        Logger::info("*** AuthorizationServer.php:compeleteAuthorizationRequest:authRequest:nonce" . var_export($nonce, true));
+
         return $this->enabledGrantTypes[$authRequest->getGrantTypeId()]
             ->completeAuthorizationRequest($authRequest)
             ->generateHttpResponse($response);
     }
+
 
     /**
      * Return an access token response.
@@ -188,7 +207,15 @@ class AuthorizationServer implements EmitterAwareInterface
      */
     public function respondToAccessTokenRequest(ServerRequestInterface $request, ResponseInterface $response)
     {
-        foreach ($this->enabledGrantTypes as $grantType) {
+        Logger::info("*** AuthorizationServer.php:respondToAccessTokenReques:request" . var_export($request, true));
+        Logger::info("*** AuthorizationServer.php:respondToAccessTokenReques:nonce" . var_export($this->nonce, true));
+        $responseType = $this->getResponseType();
+        Logger::info("*** AuthorizationServer.php:respondToAccessTokenReques:responseType" . var_export($response, true));
+//        if ($responseType instanceof IdTokenResponse) {
+//            Logger::info("*** AuthorizationServer.php:respondToAccessTokenReques:responseType" . var_export($responseType, true));
+            $responseType->setNonce($this->nonce);
+//        };
+	foreach ($this->enabledGrantTypes as $grantType) {
             if (!$grantType->canRespondToAccessTokenRequest($request)) {
                 continue;
             }

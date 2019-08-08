@@ -37,6 +37,13 @@ class AuthorizationRequest
     protected $user;
 
     /**
+     * 
+     *
+     * @var nonce
+     */
+    protected $nonce;
+
+    /**
      * An array of scope identifiers
      *
      * @var ScopeEntityInterface[]
@@ -125,6 +132,24 @@ class AuthorizationRequest
     {
         $this->user = $user;
     }
+
+
+    /**
+     * @return nonce
+     */
+    public function getNonce()
+    {
+        return $this->nonce;
+    }
+
+    /**
+     * @param $nonce
+     */
+    public function setNonce($nonce)
+    {
+        $this->nonce = $nonce;
+    }
+
 
     /**
      * @return ScopeEntityInterface[]

@@ -24,6 +24,8 @@ use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use LogicException;
 use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
+use SimpleSAML\Logger;
+
 
 class AuthCodeGrant extends AbstractAuthorizeGrant
 {
@@ -44,6 +46,10 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
      *
      * @throws Exception
      */
+
+    public $nonceParameter;
+
+
     public function __construct(
         AuthCodeRepositoryInterface $authCodeRepository,
         RefreshTokenRepositoryInterface $refreshTokenRepository,
@@ -148,6 +154,15 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
         // Issue and persist new access token
         $accessToken = $this->issueAccessToken($accessTokenTTL, $client, $authCodePayload->user_id, $scopes);
         $this->getEmitter()->emit(new RequestEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request));
+        
+
+	Logger::info("*** AuthCodeGrant.php:respondToAccessTokenRequest:nonce" . var_export($this->nonceParameter, true));
+        if ($responseType instanceof IdTokenResponse) {
+            Logger::info("*** AuthorizationServer.php:respondToAccessTokenReques:responseType" . var_export($responseType, true));
+            $responseType->setNonce($this->nonceParameter);
+        };
+
+
         $responseType->setAccessToken($accessToken);
 
         // Issue and persist new refresh token if given
@@ -268,6 +283,7 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
         );
 
         $stateParameter = $this->getQueryStringParameter('state', $request);
+        $this->nonceParameter = $this->getQueryStringParameter('nonce', $request);
 
         $authorizationRequest = new AuthorizationRequest();
         $authorizationRequest->setGrantTypeId($this->getIdentifier());
@@ -276,6 +292,10 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
 
         if ($stateParameter !== null) {
             $authorizationRequest->setState($stateParameter);
+        }
+		Logger::info("*** AuthCodeGrant.php:validateAuthorizationRequest:ServerRequest:nonce" . var_export($this->nonceParameter, true));
+		if ($this->nonceParameter !== null) {
+             $authorizationRequest->setNonce($this->nonceParameter);
         }
 
         $authorizationRequest->setScopes($scopes);
